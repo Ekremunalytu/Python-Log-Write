@@ -8,7 +8,7 @@ def show_last_log():
     output_text.insert(tk.END, "Fetching last log history...\n")
     try:
         functions.logininfo()
-        with open("login_history.txt", "r") as file:
+        with open("login_history.json", "r") as file:
             output_text.insert(tk.END, file.read())
     except Exception as e:
         output_text.insert(tk.END, f"Error: {e}\n")
@@ -18,7 +18,7 @@ def show_running_processes():
     output_text.insert(tk.END, "Fetching running processes...\n")
     try:
         functions.get_running_processes()
-        with open("running_processes.txt", "r") as file:
+        with open("running_processes.json", "r") as file:
             output_text.insert(tk.END, file.read())
     except Exception as e:
         output_text.insert(tk.END, f"Error: {e}\n")
@@ -28,7 +28,7 @@ def show_system_logs():
     output_text.insert(tk.END, "Reading system logs...\n")
     try:
         functions.read_system_log()
-        with open("system_log_output.txt", "r") as file:
+        with open("system_log.json", "r") as file:
             output_text.insert(tk.END, file.read())
     except Exception as e:
         output_text.insert(tk.END, f"Error: {e}\n")
@@ -38,7 +38,7 @@ def show_firewall_rules():
     output_text.insert(tk.END, "Fetching firewall rules...\n")
     try:
         functions.get_firewall_rules()
-        with open("firewall_rules.txt", "r") as file:
+        with open("firewall_rules.json", "r") as file:
             output_text.insert(tk.END, file.read())
     except Exception as e:
         output_text.insert(tk.END, f"Error: {e}\n")
@@ -50,27 +50,53 @@ def exit_program():
 # Ana pencereyi oluştur
 root = tk.Tk()
 root.title("macOS Log Management App")
-root.geometry("800x600")
+root.geometry("1024x768")  # Tam ekran için başlangıç boyutunu genişlet
 root.state("zoomed")
+root.configure(bg="#000000")  # Arka plan rengini siyah yap
 
 # Başlık etiketi
-title_label = tk.Label(root, text="macOS Log Management App", font=("Helvetica", 20), bg="blue", fg="white")
+title_label = tk.Label(root, text="macOS Log Management App", font=("Helvetica", 24, "bold"), bg="#1E1E1E", fg="white", pady=10)
 title_label.pack(fill=tk.X)
 
 # Butonlar için bir çerçeve oluştur
-button_frame = tk.Frame(root)
+button_frame = tk.Frame(root, bg="#000000")
 button_frame.pack(fill=tk.X, pady=10)
 
 # İşlev düğmeleri
-tk.Button(button_frame, text="View Last Log History", command=show_last_log, width=25).pack(side=tk.LEFT, padx=5)
-tk.Button(button_frame, text="View Running Processes", command=show_running_processes, width=25).pack(side=tk.LEFT, padx=5)
-tk.Button(button_frame, text="View System Logs", command=show_system_logs, width=25).pack(side=tk.LEFT, padx=5)
-tk.Button(button_frame, text="View Firewall Rules", command=show_firewall_rules, width=25).pack(side=tk.LEFT, padx=5)
-tk.Button(button_frame, text="Exit", command=exit_program, width=10, bg="red", fg="white").pack(side=tk.RIGHT, padx=5)
+def create_button(parent, text, command):
+    return tk.Button(
+        parent, 
+        text=text, 
+        command=command, 
+        width=30, 
+        bg="white", 
+        fg="black", 
+        activebackground="black", 
+        activeforeground="white", 
+        font=("Helvetica", 14, "bold"), 
+        relief="raised"
+    )
+
+create_button(button_frame, "View Last Log History", show_last_log).pack(side=tk.LEFT, padx=10)
+create_button(button_frame, "View Running Processes", show_running_processes).pack(side=tk.LEFT, padx=10)
+create_button(button_frame, "View System Logs", show_system_logs).pack(side=tk.LEFT, padx=10)
+create_button(button_frame, "View Firewall Rules", show_firewall_rules).pack(side=tk.LEFT, padx=10)
+tk.Button(
+    button_frame, 
+    text="Exit", 
+    command=exit_program, 
+    width=15, 
+    bg="white", 
+    fg="black", 
+    activebackground="black", 
+    activeforeground="white", 
+    font=("Helvetica", 14, "bold"), 
+    relief="raised"
+).pack(side=tk.RIGHT, padx=10)
 
 # Çıktılar için kaydırılabilir metin alanı
-output_text = scrolledtext.ScrolledText(root, wrap=tk.WORD, font=("Courier", 12))
-output_text.pack(expand=True, fill=tk.BOTH, padx=10, pady=10)
+output_text = scrolledtext.ScrolledText(root, wrap=tk.WORD, font=("Courier", 14), bg="#1E1E1E", fg="white", insertbackground="white")
+output_text.pack(expand=True, fill=tk.BOTH, padx=15, pady=15)
 
 # Uygulamayı çalıştır
 root.mainloop()

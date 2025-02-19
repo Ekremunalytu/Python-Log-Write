@@ -1,102 +1,110 @@
-import tkinter as tk
-from tkinter import scrolledtext, messagebox
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QTextEdit, QLineEdit, QLabel, QHBoxLayout, QComboBox
+import json
 import functions
 
-# Fonksiyonları GUI üzerinden çağırmak için yardımcı işlevler
-def show_last_log():
-    output_text.delete(1.0, tk.END)
-    output_text.insert(tk.END, "Fetching last log history...\n")
-    try:
-        functions.logininfo()
-        with open("login_history.json", "r") as file:
-            output_text.insert(tk.END, file.read())
-    except Exception as e:
-        output_text.insert(tk.END, f"Error: {e}\n")
+class LogViewer(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+        self.original_data = None  # Store unfiltered data
 
-def show_running_processes():
-    output_text.delete(1.0, tk.END)
-    output_text.insert(tk.END, "Fetching running processes...\n")
-    try:
-        functions.get_running_processes()
-        with open("running_processes.json", "r") as file:
-            output_text.insert(tk.END, file.read())
-    except Exception as e:
-        output_text.insert(tk.END, f"Error: {e}\n")
+    def initUI(self):
+        self.setWindowTitle("macOS Log Management App")
+        self.setGeometry(100, 100, 1024, 768)
 
-def show_system_logs():
-    output_text.delete(1.0, tk.END)
-    output_text.insert(tk.END, "Reading system logs...\n")
-    try:
-        functions.read_system_log()
-        with open("system_log.json", "r") as file:
-            output_text.insert(tk.END, file.read())
-    except Exception as e:
-        output_text.insert(tk.END, f"Error: {e}\n")
+        layout = QVBoxLayout()
+        
+        # Buttons
+        btn_layout = QHBoxLayout()
+        self.log_button = QPushButton("View Last Log History")
+        self.log_button.clicked.connect(lambda: self.load_data("login_history.json"))
+        
+        self.process_button = QPushButton("View Running Processes")
+        self.process_button.clicked.connect(lambda: self.load_data("running_processes.json"))
+        
+        self.system_log_button = QPushButton("View System Logs")
+        self.system_log_button.clicked.connect(lambda: self.load_data("system_log.json"))
+        
+        self.firewall_button = QPushButton("View Firewall Rules")
+        self.firewall_button.clicked.connect(lambda: self.load_data("firewall_rules.json"))
+        
+        btn_layout.addWidget(self.log_button)
+        btn_layout.addWidget(self.process_button)
+        btn_layout.addWidget(self.system_log_button)
+        btn_layout.addWidget(self.firewall_button)
+        layout.addLayout(btn_layout)
+        
+        # Output Display
+        self.output_text = QTextEdit()
+        self.output_text.setReadOnly(True)
+        layout.addWidget(self.output_text)
+        
+        # Filter Section
+        filter_layout = QHBoxLayout()
+        self.filter_input = QLineEdit()
+        self.filter_input.setPlaceholderText("Enter filter keyword...")
+        
+        self.filter_field = QComboBox()
+        self.filter_field.addItem("All Fields")
+        
+        self.filter_button = QPushButton("Apply Filter")
+        self.filter_button.clicked.connect(self.apply_filter)
+        
+        self.search_label = QLabel("Searching for: ")
 
-def show_firewall_rules():
-    output_text.delete(1.0, tk.END)
-    output_text.insert(tk.END, "Fetching firewall rules...\n")
-    try:
-        functions.get_firewall_rules()
-        with open("firewall_rules.json", "r") as file:
-            output_text.insert(tk.END, file.read())
-    except Exception as e:
-        output_text.insert(tk.END, f"Error: {e}\n")
+        filter_layout.addWidget(QLabel("Filter by:"))
+        filter_layout.addWidget(self.filter_field)
+        filter_layout.addWidget(self.filter_input)
+        filter_layout.addWidget(self.filter_button)
+        filter_layout.addWidget(self.search_label)
 
-def exit_program():
-    if messagebox.askyesno("Exit", "Are you sure you want to exit?"):
-        root.destroy()
+        layout.addLayout(filter_layout)
+        self.setLayout(layout)
 
-# Ana pencereyi oluştur
-root = tk.Tk()
-root.title("macOS Log Management App")
-root.geometry("1024x768")  # Tam ekran için başlangıç boyutunu genişlet
-root.state("zoomed")
-root.configure(bg="#000000")  # Arka plan rengini siyah yap
+    def load_data(self, filename):
+        try:
+            with open(filename, "r") as file:
+                self.original_data = json.load(file)  # Store unfiltered data
+                formatted_data = json.dumps(self.original_data, indent=4)
+                self.output_text.setPlainText(formatted_data)
+                
+                # Reset filter options
+                self.filter_field.clear()
+                self.filter_field.addItem("All Fields")
 
-# Başlık etiketi
-title_label = tk.Label(root, text="macOS Log Management App", font=("Helvetica", 24, "bold"), bg="#1E1E1E", fg="white", pady=10)
-title_label.pack(fill=tk.X)
+                # Populate filter dropdown if there are entries
+                if "entries" in self.original_data and len(self.original_data["entries"]) > 0:
+                    for key in self.original_data["entries"][0].keys():
+                        self.filter_field.addItem(key)
 
-# Butonlar için bir çerçeve oluştur
-button_frame = tk.Frame(root, bg="#000000")
-button_frame.pack(fill=tk.X, pady=10)
+            self.search_label.setText("Searching for: ")
+        except Exception as e:
+            self.output_text.setPlainText(f"Error: {e}")
 
-# İşlev düğmeleri
-def create_button(parent, text, command):
-    return tk.Button(
-        parent, 
-        text=text, 
-        command=command, 
-        width=30, 
-        bg="white", 
-        fg="black", 
-        activebackground="black", 
-        activeforeground="white", 
-        font=("Helvetica", 14, "bold"), 
-        relief="raised"
-    )
+    def apply_filter(self):
+        if not self.original_data or "entries" not in self.original_data:
+            return
 
-create_button(button_frame, "View Last Log History", show_last_log).pack(side=tk.LEFT, padx=10)
-create_button(button_frame, "View Running Processes", show_running_processes).pack(side=tk.LEFT, padx=10)
-create_button(button_frame, "View System Logs", show_system_logs).pack(side=tk.LEFT, padx=10)
-create_button(button_frame, "View Firewall Rules", show_firewall_rules).pack(side=tk.LEFT, padx=10)
-tk.Button(
-    button_frame, 
-    text="Exit", 
-    command=exit_program, 
-    width=15, 
-    bg="white", 
-    fg="black", 
-    activebackground="black", 
-    activeforeground="white", 
-    font=("Helvetica", 14, "bold"), 
-    relief="raised"
-).pack(side=tk.RIGHT, padx=10)
+        keyword = self.filter_input.text().strip().lower()
+        selected_field = self.filter_field.currentText()
+        if not keyword:
+            return
 
-# Çıktılar için kaydırılabilir metin alanı
-output_text = scrolledtext.ScrolledText(root, wrap=tk.WORD, font=("Courier", 14), bg="#1E1E1E", fg="white", insertbackground="white")
-output_text.pack(expand=True, fill=tk.BOTH, padx=15, pady=15)
+        self.search_label.setText(f"Searching for: {keyword} in {selected_field}")
 
-# Uygulamayı çalıştır
-root.mainloop()
+        try:
+            filtered_data = {"entries": []}
+            if selected_field == "All Fields":
+                filtered_data["entries"] = [entry for entry in self.original_data["entries"] if keyword in json.dumps(entry).lower()]
+            else:
+                filtered_data["entries"] = [entry for entry in self.original_data["entries"] if selected_field in entry and keyword in str(entry[selected_field]).lower()]
+
+            self.output_text.setPlainText(json.dumps(filtered_data, indent=4))
+        except Exception as e:
+            self.output_text.setPlainText(f"Error filtering data: {e}")
+
+if __name__ == "__main__":
+    app = QApplication([])
+    viewer = LogViewer()
+    viewer.show()
+    app.exec()

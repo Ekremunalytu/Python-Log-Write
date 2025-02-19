@@ -1,6 +1,7 @@
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QTextEdit, QLineEdit, QLabel, QHBoxLayout, QComboBox
 import json
-import functions
+import os
+import functions  # Import log functions
 
 class LogViewer(QWidget):
     def __init__(self):
@@ -17,16 +18,16 @@ class LogViewer(QWidget):
         # Buttons
         btn_layout = QHBoxLayout()
         self.log_button = QPushButton("View Last Log History")
-        self.log_button.clicked.connect(lambda: self.load_data("login_history.json"))
+        self.log_button.clicked.connect(lambda: self.load_data("login_history.json", functions.logininfo))
         
         self.process_button = QPushButton("View Running Processes")
-        self.process_button.clicked.connect(lambda: self.load_data("running_processes.json"))
+        self.process_button.clicked.connect(lambda: self.load_data("running_processes.json", functions.get_running_processes))
         
         self.system_log_button = QPushButton("View System Logs")
-        self.system_log_button.clicked.connect(lambda: self.load_data("system_log.json"))
+        self.system_log_button.clicked.connect(lambda: self.load_data("system_log.json", functions.read_system_log))
         
         self.firewall_button = QPushButton("View Firewall Rules")
-        self.firewall_button.clicked.connect(lambda: self.load_data("firewall_rules.json"))
+        self.firewall_button.clicked.connect(lambda: self.load_data("firewall_rules.json", functions.get_firewall_rules))
         
         btn_layout.addWidget(self.log_button)
         btn_layout.addWidget(self.process_button)
@@ -61,7 +62,14 @@ class LogViewer(QWidget):
         layout.addLayout(filter_layout)
         self.setLayout(layout)
 
-    def load_data(self, filename):
+    def load_data(self, filename, generate_function):
+        """ Update log file and load data into UI. """
+        generate_function()  # Always refresh log file on button click
+
+        if not os.path.exists(filename):
+            print(f"Error: {filename} not found.")
+            return
+
         try:
             with open(filename, "r") as file:
                 self.original_data = json.load(file)  # Store unfiltered data
@@ -82,6 +90,7 @@ class LogViewer(QWidget):
             self.output_text.setPlainText(f"Error: {e}")
 
     def apply_filter(self):
+        """ Apply filtering based on user input. """
         if not self.original_data or "entries" not in self.original_data:
             return
 

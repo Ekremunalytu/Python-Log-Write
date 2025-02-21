@@ -7,9 +7,9 @@ class CommandWorker(QThread):
 
     def __init__(self, command, parser_func, input_data=None):
         super().__init__()
-        self.command = command         # Örneğin: ["last"]
-        self.parser_func = parser_func # Komut çıktısını işleyen fonksiyon
-        self.input_data = input_data   # Örneğin, sudo parolası
+        self.command = command         # e.g. ["last"]
+        self.parser_func = parser_func # function to parse the command output
+        self.input_data = input_data   # optional input (e.g. sudo password)
 
     def run(self):
         try:

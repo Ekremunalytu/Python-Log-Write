@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QTextEdit, QLineEdit, QLabel, QHBoxLayout, QComboBox
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QTextEdit, QLineEdit, QLabel, QHBoxLayout, QComboBox, QInputDialog
 import json
 import os
 import functions  # Import log functions
@@ -27,7 +27,7 @@ class LogViewer(QWidget):
         self.system_log_button.clicked.connect(lambda: self.load_data("system_log.json", functions.read_system_log))
         
         self.firewall_button = QPushButton("View Firewall Rules")
-        self.firewall_button.clicked.connect(lambda: self.load_data("firewall_rules.json", functions.get_firewall_rules))
+        self.firewall_button.clicked.connect(self.get_firewall_logs)
         
         btn_layout.addWidget(self.log_button)
         btn_layout.addWidget(self.process_button)
@@ -51,12 +51,16 @@ class LogViewer(QWidget):
         self.filter_button = QPushButton("Apply Filter")
         self.filter_button.clicked.connect(self.apply_filter)
         
+        self.clear_filter_button = QPushButton("Clear Filter")
+        self.clear_filter_button.clicked.connect(self.clear_filter)
+        
         self.search_label = QLabel("Searching for: ")
 
         filter_layout.addWidget(QLabel("Filter by:"))
         filter_layout.addWidget(self.filter_field)
         filter_layout.addWidget(self.filter_input)
         filter_layout.addWidget(self.filter_button)
+        filter_layout.addWidget(self.clear_filter_button)
         filter_layout.addWidget(self.search_label)
 
         layout.addLayout(filter_layout)
@@ -111,6 +115,20 @@ class LogViewer(QWidget):
             self.output_text.setPlainText(json.dumps(filtered_data, indent=4))
         except Exception as e:
             self.output_text.setPlainText(f"Error filtering data: {e}")
+
+    def clear_filter(self):
+        """ Reset to original data. """
+        if self.original_data:
+            self.output_text.setPlainText(json.dumps(self.original_data, indent=4))
+            self.search_label.setText("Searching for: ")
+            self.filter_input.clear()
+
+    def get_firewall_logs(self):
+        """ Prompt user for sudo password and fetch firewall logs. """
+        password, ok = QInputDialog.getText(self, "Password", "Enter your sudo password:", QLineEdit.EchoMode.Password)
+        if ok and password:
+            functions.get_firewall_rules(password)
+            self.load_data("firewall_logs.json", lambda: None)
 
 if __name__ == "__main__":
     app = QApplication([])

@@ -70,5 +70,45 @@ def read_system_log():
     except Exception as e:
         print(f"Error: {e}")
 
+def get_firewall_rules(password):
+    """ Fetch firewall logs from macOS using sudo password. """
+    log_file_path = "/var/log/pf.log"
+    try:
+        # Sudo ile firewall loglarını oku
+        result = subprocess.run(["sudo", "-S", "cat", log_file_path], 
+                                input=password + "\n", 
+                                stdout=subprocess.PIPE, 
+                                stderr=subprocess.PIPE, 
+                                text=True)
+        
+        # Eğer komut başarısız olursa hata mesajını göster
+        if result.returncode != 0:
+            print(f"Error reading firewall logs: {result.stderr}")
+            save_to_json("firewall_logs.json", {"timestamp": datetime.now().isoformat(), "type": "firewall_logs", "entries": []})
+            return
+
+        logs = result.stdout.strip().splitlines()
+        parsed_logs = []
+        for line in logs[-20:]:
+            parts = line.split(None, 1)
+            if len(parts) == 2:
+                timestamp, message = parts
+            else:
+                timestamp, message = "Unknown", line
+            parsed_logs.append({"timestamp": timestamp, "message": message})
+
+        log_data = {"timestamp": datetime.now().isoformat(), "type": "firewall_logs", "entries": parsed_logs}
+        save_to_json("firewall_logs.json", log_data)
+
+    except FileNotFoundError:
+        print(f"Error: {log_file_path} not found. Make sure firewall logging is enabled.")
+        save_to_json("firewall_logs.json", {"timestamp": datetime.now().isoformat(), "type": "firewall_logs", "entries": []})
+
+    except PermissionError:
+        print(f"Error: Permission denied. Run the app with administrator privileges.")
+
+    except Exception as e:
+        print(f"Error: {e}")
+
 # Ensure log files exist when the script is imported
 ensure_log_files()

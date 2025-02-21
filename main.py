@@ -98,6 +98,7 @@ class LogViewer(QWidget):
         self.search_label.setText("Searching for: ")
 
     def fetch_system_log_async(self):
+        # Sistem logları sudo gerektirmeden okunuyor.
         worker = CommandWorker(["cat", "/var/log/system.log"], functions.parse_system_log)
         self.workers.append(worker)
         worker.finished.connect(lambda data, w=worker: self.handle_system_log(data, w))
@@ -115,6 +116,7 @@ class LogViewer(QWidget):
         self.search_label.setText("Searching for: ")
 
     def fetch_firewall_logs_async(self):
+        # Firewall logları için sudo yetkisi gerekiyor.
         password, ok = QInputDialog.getText(self, "Password", "Enter your sudo password:", QLineEdit.EchoMode.Password)
         if ok and password:
             worker = CommandWorker(
